@@ -1,0 +1,23 @@
+[package]
+name = "ruspiro-uart"
+authors = ["André Borrmann <pspwizard@gmx.de>"]
+version = "0.0.1" # remember to update html_root_url
+description = ""
+license = "Apache-2.0"
+repository = "https://github.com/RusPiRo/ruspiro-uart/tree/v0.0.1"
+readme = "README.md"
+keywords = ["ruspiro", "uart", "baremetal"]
+categories = ["no_std"]
+edition = "2018"
+
+[lib]
+
+[dependencies]
+ruspiro-gpio = { git = "https://github.com/RusPiRo/ruspiro-gpio", tag = "v0.0.1" }
+ruspiro-register = { git = "https://github.com/RusPiRo/ruspiro-register", tag = "v0.0.1" }
+ruspiro-singleton = { git = "https://github.com/RusPiRo/ruspiro-singleton", tag = "v0.0.1" }
+
+[features]
+
+[patch."https://github.com/RusPiRo/ruspiro-gpio"]
+ruspiro-gpio = { path = "../ruspiro-gpio" }
