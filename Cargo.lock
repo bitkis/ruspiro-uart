@@ -37,7 +37,7 @@ dependencies = [
 
 [[package]]
 name = "ruspiro-uart"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "ruspiro-console 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruspiro-gpio 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
