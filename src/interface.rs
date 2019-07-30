@@ -44,6 +44,12 @@ pub(crate) fn uart0_release() {
 }
 
 // send a character string to the UART0 peripheral
+pub(crate) fn uart0_send_char(c: char) {
+    let data: [u8;1] = [c as u8];
+    uart0_send_data(&data);
+}
+
+// send a character string to the UART0 peripheral
 pub(crate) fn uart0_send_string(s: &str) {
     uart0_send_data(s.as_bytes());
 }
