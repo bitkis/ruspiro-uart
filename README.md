@@ -8,7 +8,7 @@ while the program is executed on the device. Especialy if the program is in a st
 To use the crate just add the following dependency to your ``Cargo.toml`` file:
 ```
 [dependencies]
-ruspiro-uart = "0.0.2"
+ruspiro-uart = "0.0.3"
 ```
 
 Once done the access to the UART abstraction is available in your rust files like so:
@@ -17,7 +17,7 @@ use ruspiro_uart::Uart0;
 
 fn demo() {
     let mut uart = Uart0::new();
-    if uart.initialize(25_000_000, 115_200).is_ok() {
+    if uart.initialize(250_000_000, 115_200).is_ok() {
         uart.send_string("This is some string");
     }
 }

@@ -4,7 +4,7 @@
  * Author: André Borrmann 
  * License: Apache License 2.0
  **********************************************************************************************************************/
-#![doc(html_root_url = "https://docs.rs/ruspiro-uart/0.0.2")]
+#![doc(html_root_url = "https://docs.rs/ruspiro-uart/0.0.3")]
 #![no_std]
 
 //! # UART API for Raspberry Pi
@@ -21,7 +21,7 @@
 //! 
 //! fn demo() {
 //!     let mut uart = Uart0::new();
-//!     if uart.initialize(25_000_000, 115_200).is_ok() {
+//!     if uart.initialize(250_000_000, 115_200).is_ok() {
 //!         uart.send_string("This is some string");
 //!     }
 //! }
@@ -60,10 +60,10 @@ use ruspiro_console::ConsoleImpl;
 mod interface;
 
 // Peripheral MMIO base address - depends on the target family (Pi2 or 3)
-#[cfg(not(target_family="ruspiro-rpi3"))]
+#[cfg(not(target_family="ruspiro-pi3"))]
 const PERIPHERAL_BASE: u32 = 0x2000_0000;
 
-#[cfg(target_family="ruspiro-rpi3")]
+#[cfg(target_family="ruspiro-pi3")]
 const PERIPHERAL_BASE: u32 = 0x3F00_0000;
 
 // UART0 MMIO base address
