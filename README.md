@@ -4,11 +4,16 @@ This crate provides access to the Uart0 (miniUART) peripheral of the Raspberry P
 development to use an terminal console connected to the miniUART of the Raspberry Pi to get some debug information printed
 while the program is executed on the device. Especialy if the program is in a state where there is no other output option.
 
+[![Travis-CI Status](https://api.travis-ci.org/RusPiRo/ruspiro-uart.svg?branch=master)](https://travis-ci.org/RusPiRo/ruspiro-uart)
+[![Latest Version](https://img.shields.io/crates/v/ruspiro-uart.svg)](https://crates.io/crates/ruspiro-uart)
+[![Documentation](https://docs.rs/ruspiro-uart/badge.svg)](https://docs.rs/ruspiro-uart)
+[![License](https://img.shields.io/crates/l/ruspiro-uart.svg)](https://github.com/RusPiRo/ruspiro-uart#license)
+
 ## Usage
 To use the crate just add the following dependency to your ``Cargo.toml`` file:
 ```
 [dependencies]
-ruspiro-uart = "0.0.3"
+ruspiro-uart = "0.1.0"
 ```
 
 Once done the access to the UART abstraction is available in your rust files like so:
@@ -50,4 +55,4 @@ fn print_something(s: &str) {
 ```
 
 ## License
-This crate is licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
+Licensed under Apache License, Version 2.0, ([LICENSE](LICENSE) or http://www.apache.org/licenses/LICENSE-2.0)
