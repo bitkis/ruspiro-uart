@@ -11,6 +11,14 @@
 use ruspiro_register::{define_registers, RegisterFieldValue};
 use ruspiro_gpio::GPIO;
 
+// Peripheral MMIO base address - depends on the right feature
+#[cfg(feature="ruspiro_pi3")]
+const PERIPHERAL_BASE: u32 = 0x3F00_0000;
+
+// UART0 MMIO base address
+const UART0_BASE: u32 =  PERIPHERAL_BASE + 0x0021_5000;
+
+
 // initialize the UART0 peripheral of the Raspberry Pi3. This will reserve 2 GPIO pins for UART0 usage.
 // Those pins actually are GPIO14 and 15.
 pub(crate) fn uart0_init(clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {

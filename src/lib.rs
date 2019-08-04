@@ -59,14 +59,6 @@ use ruspiro_console::ConsoleImpl;
 
 mod interface;
 
-// Peripheral MMIO base address - depends on the target family (Pi2 or 3)
-
-#[cfg(feature="ruspiro_pi3")]
-const PERIPHERAL_BASE: u32 = 0x3F00_0000;
-
-// UART0 MMIO base address
-const UART0_BASE: u32 =  PERIPHERAL_BASE + 0x0021_5000;
-
 /// Uart0 (miniUART) peripheral representation
 pub struct Uart0 {
     initialized: bool,
