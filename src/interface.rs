@@ -77,8 +77,6 @@ fn uart0_send_data(data: &[u8]) {
     }
 }
 
-use super::UART0_BASE as UART0_BASE;
-
 // specify the UART0 registers
 define_registers! [
     AUX_IRQ:          ReadWrite<u32> @ UART0_BASE + 0x00,
