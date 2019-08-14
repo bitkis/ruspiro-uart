@@ -1,7 +1,7 @@
 # UART RusPiRo crate
 
-This crate provides access to the Uart0 (miniUART) peripheral of the Raspberry Pi. This is quite helpful during bare metal
-development to use an terminal console connected to the miniUART of the Raspberry Pi to get some debug information printed
+This crate provides access to the Uart1 (miniUART) peripheral of the Raspberry Pi. This is quite helpful during bare metal
+development to use a terminal console connected to the miniUART of the Raspberry Pi to get some debug information printed
 while the program is executed on the device. Especialy if the program is in a state where there is no other output option.
 
 [![Travis-CI Status](https://api.travis-ci.org/RusPiRo/ruspiro-uart.svg?branch=master)](https://travis-ci.org/RusPiRo/ruspiro-uart)
@@ -13,22 +13,22 @@ while the program is executed on the device. Especialy if the program is in a st
 To use the crate just add the following dependency to your ``Cargo.toml`` file:
 ```
 [dependencies]
-ruspiro-uart = "0.1.0"
+ruspiro-uart = "0.2.0"
 ```
 
 Once done the access to the UART abstraction is available in your rust files like so:
 ```
-use ruspiro_uart::Uart0;
+use ruspiro_uart::Uart1;
 
 fn demo() {
-    let mut uart = Uart0::new();
+    let mut uart = Uart1::new();
     if uart.initialize(250_000_000, 115_200).is_ok() {
         uart.send_string("This is some string");
     }
 }
 ```
 
-In this example the Uart0 will be no longer be available once it goes out of scope. Whichs makes it a bit cumbersome
+In this example the Uart1 will be no longer be available once it goes out of scope. Whichs makes it a bit cumbersome
 to use it in a real world example. Therefore the proposed usage of the UART is to use it as a generic console output
 channel. To do so, please refer to the [ruspiro-console crate](https://crates.io/crates/ruspiro-console).
 But in case you would like to use the uart without the console abstraction it is recommended to wrap it into a singleton
@@ -39,9 +39,9 @@ mailbox crate is not linked into the Uart crate to ensure usability of this crat
 
 ```
 use ruspiro_singleton::Singleton; // don't forget the dependency to be setup
-use ruspiro_uart::Uart0;
+use ruspiro_uart::Uart1;
 
-static UART: Singleton<Uart0> = Singleton::new(Uart0::new());
+static UART: Singleton<Uart1> = Singleton::new(Uart1::new());
 
 fn demo() {
     let _ = UART.take_for(|uart| uart.initialize(250_000_000, 115_200)); // initialize(...) gives a Result, you may want to panic if there is an Error returned.

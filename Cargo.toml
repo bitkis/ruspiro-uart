@@ -1,11 +1,11 @@
 [package]
 name = "ruspiro-uart"
 authors = ["André Borrmann <pspwizard@gmx.de>"]
-version = "0.1.0" # remember to update html_root_url
+version = "0.2.0" # remember to update html_root_url
 description = "This crate provides a convinient access API to the Raspberry Pi 3 UART interface"
 license = "Apache-2.0"
-repository = "https://github.com/RusPiRo/ruspiro-uart/tree/v0.1.0"
-documentation = "https://docs.rs/ruspiro-uart/0.1.0"
+repository = "https://github.com/RusPiRo/ruspiro-uart/tree/v0.2.0"
+documentation = "https://docs.rs/ruspiro-uart/0.2.0"
 readme = "README.md"
 keywords = ["RusPiRo", "uart", "baremetal", "raspberrypi"]
 categories = ["no-std", "embedded"]
@@ -16,7 +16,7 @@ edition = "2018"
 [dependencies]
 ruspiro-gpio = "0.1.0"
 ruspiro-register = "0.1.1"
-ruspiro-console = "0.1.0"
+ruspiro-console = "0.1.1"
 
 [features]
 default = ["ruspiro_pi3"]

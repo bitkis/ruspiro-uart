@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "ruspiro-console"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "ruspiro-singleton 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -39,13 +39,13 @@ dependencies = [
 name = "ruspiro-uart"
 version = "0.1.0"
 dependencies = [
- "ruspiro-console 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruspiro-console 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruspiro-gpio 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruspiro-register 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
-"checksum ruspiro-console 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5f08913d3340de032659beda7f171497b01520cc9808973be7ea3aae6baf88be"
+"checksum ruspiro-console 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4a7d50dde486f8fd3f91f5d468c0ab8e01bc5eecbd7b5bf2696bb2acfa5c5b26"
 "checksum ruspiro-gpio 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "00c194a647e75715f420138441f0a553e21f092a111a1a593652341428b39ec4"
 "checksum ruspiro-lock 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5655fe05fe4b90dc84698371cf0d7db487c6826933017ae199d908cb2a96e9bc"
 "checksum ruspiro-register 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b980f28994eba9f2f2a7e539acdc2daf7903cd38dd173c24153d4a2a69f23414"
