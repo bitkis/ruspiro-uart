@@ -1,8 +1,9 @@
 # UART RusPiRo crate
 
-This crate provides access to the Uart1 (miniUART) peripheral of the Raspberry Pi. This is quite helpful during bare metal
+This crate provides access to the Uart0(Pl011) and Uart1 (miniUART) peripheral of the Raspberry Pi. This is quite helpful during bare metal
 development to use a terminal console connected to the miniUART of the Raspberry Pi to get some debug information printed
-while the program is executed on the device. Especialy if the program is in a state where there is no other output option.
+while the program is executed on the device. Especialy if the program is in a state where there is no other output option and blinking
+LEDs are not sufficient.
 
 [![Travis-CI Status](https://api.travis-ci.org/RusPiRo/ruspiro-uart.svg?branch=master)](https://travis-ci.org/RusPiRo/ruspiro-uart)
 [![Latest Version](https://img.shields.io/crates/v/ruspiro-uart.svg)](https://crates.io/crates/ruspiro-uart)
@@ -44,7 +45,7 @@ use ruspiro_uart::Uart1;
 static UART: Singleton<Uart1> = Singleton::new(Uart1::new());
 
 fn demo() {
-    let _ = UART.take_for(|uart| uart.initialize(250_000_000, 115_200)); // initialize(...) gives a Result, you may want to panic if there is an Error returned.
+    let _ = UART.take_for(|uart| uart.initialize(250_000_000, 115_200)).expect("unable to init uart1");
 
     print_something("Hello Uart...");
 }

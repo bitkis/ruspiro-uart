@@ -17,7 +17,7 @@
 //! # Example
 //! 
 //! The proposed usage of the UART is to attach it to a generic console as an output channel instead of using it directly.
-//! To do so, please refer to the [ruspiro-console crate](https://crates.io/crates/ruspiro-console).
+//! To do so, please refer to the [``ruspiro-console`` crate](https://crates.io/crates/ruspiro-console).
 //! 
 //! But in case you would like to use the uart without the console abstraction it is recommended to wrap it into a singleton
 //! to guaranty safe cross core access and ensure only one time initialization. In the example we pass a fixed core clock rate to
