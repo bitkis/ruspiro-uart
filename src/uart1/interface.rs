@@ -9,10 +9,12 @@
 //! 
 
 extern crate alloc;
-use alloc::vec::Vec;
+//use alloc::vec::Vec;
 
 use ruspiro_register::{define_registers, RegisterFieldValue};
 use ruspiro_gpio::GPIO;
+use ruspiro_timer as timer;
+
 use crate::InterruptType;
 
 // Peripheral MMIO base address - depends on the right feature
@@ -77,33 +79,15 @@ pub(crate) fn uart1_send_string(s: &str) {
 fn uart1_send_data(data: &[u8]) {
     for byte in data {
         // wait for the transmitter to be empty
-        while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::TRANSEMPTY) == 0 { }
+        while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::TRANSEMPTY) == 0 { timer::sleepcycles(10); }
         AUX_MU_IO_REG::Register.set(*byte as u32);
     }
 }
 
-// try to recieve the up to the number given bytes from the uart
-// it's up te the caller to check if the requested ammount of data has been
-// recieved, or less...
-pub(crate) fn uart1_receive_data(up_to: usize, blocking: bool) -> Vec<u8> {
-    const TRIES:u32 = 2000u32;
-    let mut data = Vec::<u8>::with_capacity(up_to);    
-    for _ in 0..up_to {        
-        // wait for data beeing received        
-        if blocking { 
-            while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::DATAREADY) == 0 { }
-        } else {
-            let mut count = 0;     
-            while (AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::DATAREADY) == 0) && (count < TRIES) { count += 1; } 
-            if count >= TRIES {
-                return data;
-            }
-        }
-        
-        data.push((AUX_MU_IO_REG::Register.get() & 0xFF) as u8);
-    }
-
-    data
+// wait to receive 1 byte from uart and return it
+pub(crate) fn uart1_receive_data() -> u8 {
+    while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::DATAREADY) == 0 { timer::sleepcycles(10); }
+    (AUX_MU_IO_REG::Register.get() & 0xFF) as u8
 }
 
 pub(crate) fn uart1_enable_interrupts(i_type: InterruptType) {
