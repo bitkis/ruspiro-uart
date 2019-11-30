@@ -19,18 +19,14 @@
 //! 
 
 extern crate alloc;
-use alloc::vec::*;
 use ruspiro_console::ConsoleImpl;
 use crate::InterruptType;
 
 mod interface;
 
-const RX_BUFF_SIZE: usize = 256; // RX buffer size that allows reading incumming data as fast as possible upt to this many bytes
-
 /// Uart1 (miniUART) peripheral representation
 pub struct Uart1 {
     initialized: bool,
-    rx_buffer: [u8; RX_BUFF_SIZE],
 }
 
 impl Uart1 {
@@ -42,7 +38,6 @@ impl Uart1 {
     pub const fn new() -> Self {
         Uart1 {
             initialized: false,
-            rx_buffer: [0; RX_BUFF_SIZE],
         }
     }
 
@@ -93,6 +88,21 @@ impl Uart1 {
         }
     }
 
+    /// Send a byte buffer to the uart peripheral
+    /// # Example
+    /// ```
+    /// # fn doc() {
+    /// # let mut uart = Uart1::new();
+    /// # let _ = uart.initialize(20_000_000, 115_200);
+    /// uart.send_data("SomeData".as_bytes());
+    /// #}
+    /// ```
+    pub fn send_data(&self, d: &[u8]) {
+        if self.initialized {
+            interface::uart1_send_data(d);
+        }
+    }
+
     /// Try to recieve data from the Uart of the given size
     /// If the requested size could be read it returns a ``Ok(data: Vec<u8>)`` containing the data
     /// otherwise an ``Err(msg: &str)``.
@@ -106,15 +116,31 @@ impl Uart1 {
     /// # }
     /// ```
     /// 
-    pub fn try_receive_data(&mut self, size: usize) -> Result<Vec<u8>, &'static str> {
+    pub fn try_receive_data(&self, buffer: &mut [u8]) -> Result<usize, &'static str> {
         if self.initialized {
-            if size >= RX_BUFF_SIZE {
-                Err("unable to receive more that 256 bytes at ones")
+            if buffer.len() < 1 {
+                Err("buffer size expected to be at least 1")
             } else {
-                for c in 0..size {
-                    self.rx_buffer[c] = interface::uart1_receive_data();
+                for c in 0..buffer.len() {
+                    buffer[c] = interface::uart1_receive_data(1000)?;
                 }
-                Ok(self.rx_buffer[0..size].to_vec())
+                Ok(buffer.len())
+            }
+        } else {
+            // if Uart is not initialized return 0 size vector or error? For now -> error
+            Err("Uart not initialized")
+        }
+    }
+
+    pub fn receive_data(&self, buffer: &mut [u8]) -> Result<usize, &'static str> {
+        if self.initialized {
+            if buffer.len() < 1 {
+                Err("buffer size expected to be at least 1")
+            } else {
+                for c in 0..buffer.len() {
+                    buffer[c] = interface::uart1_receive_data(0)?;
+                }
+                Ok(buffer.len())
             }
         } else {
             // if Uart is not initialized return 0 size vector or error? For now -> error
@@ -155,24 +181,25 @@ impl Uart1 {
         }
     }
 
-    /// Acknowledge the raised interrupt. This function is called inside the interrupt handler to prevent the re-entring
-    /// into the interrupt handler when the same has been properly handled. If the interrupt is not acknowledged it will
-    /// cause an endless loop as the interrupt handler will be called again and again.
-    /// 
-    /// The following example assumes the usage of the [``ruspiro-interrupt`` crate](https://crates.io/crates/ruspiro-interrupt)
-    /// to implement the interrupt handler.
+    /// Read the current interrupt status.
+    /// Bit 0 -> is set to 0 if an interrupt is pending
+    /// Bit [1:2] -> 01 = transmit register is empty
+    ///              10 = recieve register holds valid data
     /// # Example
     /// ```
-    /// # use ruspiro_interrupt::*;
-    /// #[IrqHandler(Aux, Uart1)]
-    /// fn uart_handler() {
-    ///     uart.acknowledge_interrupt();
+    /// # fn doc() {
+    /// # let uart = Uart1::new();
+    /// # let _ = uart.initialize(250_000_000, 115_200);
+    /// let irq_status = uart.get_interrupt_status();
+    /// if (irq_status & 0b010) != 0 {
+    ///     println!("transmit register empty raised");
     /// }
-    /// ```
-    /// 
-    pub fn acknowledge_interrupt(&self) {
+    /// # }
+    pub fn get_interrupt_status(&self) -> u32 {
         if self.initialized {
-            interface::uart1_acknowledge_interrupt();
+            interface::uart1_get_interrupt_status()
+        } else {
+            0
         }
     }
 }

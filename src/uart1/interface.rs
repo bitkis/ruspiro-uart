@@ -8,9 +8,6 @@
 //! # Low-Level UART interface implementation
 //! 
 
-extern crate alloc;
-//use alloc::vec::Vec;
-
 use ruspiro_register::{define_registers, RegisterFieldValue};
 use ruspiro_gpio::GPIO;
 use ruspiro_timer as timer;
@@ -76,7 +73,7 @@ pub(crate) fn uart1_send_string(s: &str) {
 }
 
 // send byte data to the UART1 peripheral
-fn uart1_send_data(data: &[u8]) {
+pub(crate) fn uart1_send_data(data: &[u8]) {
     for byte in data {
         // wait for the transmitter to be empty
         while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::TRANSEMPTY) == 0 { timer::sleepcycles(10); }
@@ -85,9 +82,20 @@ fn uart1_send_data(data: &[u8]) {
 }
 
 // wait to receive 1 byte from uart and return it
-pub(crate) fn uart1_receive_data() -> u8 {
-    while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::DATAREADY) == 0 { timer::sleepcycles(10); }
-    (AUX_MU_IO_REG::Register.get() & 0xFF) as u8
+// if timeout is > 0 return timeout error if nothing was available for this many time
+// timeout is given in multiples of 1000 CPU cycles
+pub(crate) fn uart1_receive_data(timeout: u32) -> Result<u8, &'static str> {
+    let mut count = 0;
+    while AUX_MU_LSR_REG::Register.read(AUX_MU_LSR_REG::DATAREADY) == 0 &&
+        (timeout == 0 || count < timeout) { 
+        timer::sleepcycles(1000);
+        count += 1;
+    }
+    if timeout != 0 && count >= timeout {
+        Err("Timeout")
+    } else {
+        Ok((AUX_MU_IO_REG::Register.get() & 0xFF) as u8)
+    }
 }
 
 pub(crate) fn uart1_enable_interrupts(i_type: InterruptType) {
@@ -128,15 +136,14 @@ pub(crate) fn uart1_disable_interrupts(i_type: InterruptType) {
     }
 }
 
-pub(crate) fn uart1_acknowledge_interrupt() {
-    if AUX_IRQ::Register.get() == 0x1 {
-        AUX_IRQ::Register.set(0x1);
-    }
+pub(crate) fn uart1_get_interrupt_status() -> u32 {
+    AUX_MU_IIR_REG::Register.read(AUX_MU_IIR_REG::IRQPENDING) |
+    (AUX_MU_IIR_REG::Register.read(AUX_MU_IIR_REG::IRQID_FIFOCLR) << 1)
 }
 
 // specify the AUX registers
 define_registers! [
-    AUX_IRQ:          ReadWrite<u32> @ AUX_BASE + 0x00,
+    AUX_IRQ:          ReadOnly<u32> @ AUX_BASE + 0x00,
     AUX_ENABLES:      ReadWrite<u32> @ AUX_BASE + 0x04 => [
         MINIUART_ENABLE OFFSET(0),
         SPI1_ENABLE OFFSET(1),

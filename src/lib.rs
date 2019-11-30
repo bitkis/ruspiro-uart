@@ -41,8 +41,6 @@
 //! }
 //! ```
 
-extern crate alloc;
-
 pub mod uart0;
 #[doc(inline)]
 pub use uart0::*;
