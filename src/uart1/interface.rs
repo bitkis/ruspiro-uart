@@ -8,8 +8,8 @@
 //! # Low-Level UART interface implementation
 //! 
 
-use ruspiro_register::{define_registers, RegisterFieldValue};
-use ruspiro_gpio::GPIO;
+use ruspiro_register::{define_mmio_register, RegisterFieldValue};
+use ruspiro_gpio::{GPIO, debug::lit_debug_led };
 use ruspiro_timer as timer;
 
 use crate::InterruptType;
@@ -28,7 +28,6 @@ pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), &'static
     GPIO.take_for(|gpio| {
         let maybe_tx = gpio.get_pin(14).map(|pin| pin.to_alt_f5().to_pud_disabled());
         let maybe_ty = gpio.get_pin(15).map(|pin| pin.to_alt_f5().to_pud_disabled());
-
         // returns OK only if both pins could be setup correctly
         maybe_tx.and(maybe_ty)
     }).map(|_| {
@@ -142,38 +141,38 @@ pub(crate) fn uart1_get_interrupt_status() -> u32 {
 }
 
 // specify the AUX registers
-define_registers! [
-    AUX_IRQ:          ReadOnly<u32> @ AUX_BASE + 0x00,
-    AUX_ENABLES:      ReadWrite<u32> @ AUX_BASE + 0x04 => [
+define_mmio_register! [
+    AUX_IRQ<ReadOnly<u32>@(AUX_BASE + 0x00)>,
+    AUX_ENABLES<ReadWrite<u32>@(AUX_BASE + 0x04)> {
         MINIUART_ENABLE OFFSET(0),
         SPI1_ENABLE OFFSET(1),
         SPI2_ENABLE OFFSET(2)
-    ],
-    AUX_MU_IO_REG:    ReadWrite<u32> @ AUX_BASE + 0x40,
-    AUX_MU_IER_REG:   ReadWrite<u32> @ AUX_BASE + 0x44 => [
+    },
+    AUX_MU_IO_REG<ReadWrite<u32>@(AUX_BASE + 0x40)>,
+    AUX_MU_IER_REG<ReadWrite<u32>@(AUX_BASE + 0x44)> {
         RX_ENABLE OFFSET(0),
         TX_ENABLE OFFSET(1),
         RCV_IRQ   OFFSET(2) BITS(2) // set always 0b11 if interrupts shall be received
-    ],
-    AUX_MU_IIR_REG:   ReadWrite<u32> @ AUX_BASE + 0x48 => [
+    },
+    AUX_MU_IIR_REG<ReadWrite<u32>@(AUX_BASE + 0x48)> {
         IRQPENDING OFFSET(0),
         IRQID_FIFOCLR OFFSET(1) BITS(2),
         FIFO_ENABLES OFFSET(6) BITS(2)
-    ],
-    AUX_MU_LCR_REG:   ReadWrite<u32> @ AUX_BASE + 0x4C => [
+    },
+    AUX_MU_LCR_REG<ReadWrite<u32>@(AUX_BASE + 0x4C)> {
         DATASIZE OFFSET(0) BITS(2),
         BREAK OFFSET(6),
         DLAB OFFSET(7)
-    ],
-    AUX_MU_MCR_REG:   ReadWrite<u32> @ AUX_BASE + 0x50,
-    AUX_MU_LSR_REG:   ReadOnly<u32> @ AUX_BASE + 0x54 => [
+    },
+    AUX_MU_MCR_REG<ReadWrite<u32>@(AUX_BASE + 0x50)>,
+    AUX_MU_LSR_REG<ReadOnly<u32>@(AUX_BASE + 0x54)> {
         DATAREADY  OFFSET(0),
         RCVOVERRUN OFFSET(1),
         TRANSEMPTY OFFSET(5),
         TRANSIDLE  OFFSET(6)
-    ],
-    AUX_MU_MSR_REG:   ReadWrite<u32> @ AUX_BASE + 0x58,
-    AUX_MU_CNTL_REG:  ReadWrite<u32> @ AUX_BASE + 0x60 => [
+    },
+    AUX_MU_MSR_REG<ReadWrite<u32>@(AUX_BASE + 0x58)>,
+    AUX_MU_CNTL_REG<ReadWrite<u32>@(AUX_BASE + 0x60)> {
         RCV_ENABLE OFFSET(0),
         TRANS_ENABLE OFFSET(1),
         AUTO_FLOW_RTS OFFSET(2),
@@ -182,7 +181,7 @@ define_registers! [
         RTS_ASSERT OFFSET(6),
         CTS_ASSERT OFFSET(7)
 
-    ],
-    AUX_MU_STAT_REG:  ReadWrite<u32> @ AUX_BASE + 0x64,
-    AUX_MU_BAUD_REG:  ReadWrite<u32> @ AUX_BASE + 0x68
+    },
+    AUX_MU_STAT_REG<ReadWrite<u32>@(AUX_BASE + 0x64)>,
+    AUX_MU_BAUD_REG<ReadWrite<u32>@(AUX_BASE + 0x68)>
 ];

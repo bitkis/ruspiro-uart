@@ -95,12 +95,44 @@ impl Uart1 {
     /// # let mut uart = Uart1::new();
     /// # let _ = uart.initialize(20_000_000, 115_200);
     /// uart.send_data("SomeData".as_bytes());
-    /// #}
+    /// # }
     /// ```
     pub fn send_data(&self, d: &[u8]) {
         if self.initialized {
             interface::uart1_send_data(d);
         }
+    }
+
+    /// convert a given u64 into it's hex representation and send to uart
+    /// # Example
+    /// ```
+    /// # fn doc() {
+    /// # let mut uart = Uart1::new();
+    /// # let _ = uart.initialize(20_000_000, 115_200);
+    /// uart.send_hex(12345);
+    /// # }
+    /// ```
+    pub fn send_hex(&self, value: u64) {
+        if value == 0 {
+            self.send_string("0x0");
+            return;    
+        }
+        const HEXCHAR : &[u8] = "0123456789ABCDEF".as_bytes();
+        let mut tmp = value;
+        let mut hex: [u8;16] = [0; 16];
+        let mut idx = 0;
+        while tmp != 0 {
+            hex[idx] = HEXCHAR[(tmp & 0xF) as usize];
+            tmp = tmp >> 4;
+            idx = idx+1;
+        }
+        
+        self.send_string("0x");
+        for i in 0..16 {
+            if hex[15-i] != 0 {
+                self.send_char(hex[15-i] as char);
+            }
+        }    
     }
 
     /// Try to recieve data from the Uart of the given size

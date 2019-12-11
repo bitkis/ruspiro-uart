@@ -9,7 +9,7 @@
 //! 
 
 use ruspiro_gpio::GPIO;
-use ruspiro_register::{define_registers, RegisterFieldValue};
+use ruspiro_register::{define_mmio_register, RegisterFieldValue};
 use ruspiro_timer as timer;
 
 use crate::UartResult;
@@ -107,19 +107,19 @@ enum Wlen {
     DataLen5    = 0
 }
 
-define_registers![
-    UART0_DR:       ReadWrite<u32> @ UART0_BASE + 0x00,
-    UART0_RSRECR:   ReadWrite<u32> @ UART0_BASE + 0x04,
-    UART0_FR:       ReadWrite<u32> @ UART0_BASE + 0x18 => [
+define_mmio_register![
+    UART0_DR<ReadWrite<u32>@(UART0_BASE + 0x00)>,
+    UART0_RSRECR<ReadWrite<u32>@(UART0_BASE + 0x04)>,
+    UART0_FR<ReadWrite<u32>@(UART0_BASE + 0x18)> {
         TXFE    OFFSET(7),
         RXFF    OFFSET(6),
         TXFF    OFFSET(5),
         RXFE    OFFSET(4),
         BUSY    OFFSET(3)
-    ],
-    UART0_IBRD:     ReadWrite<u32> @ UART0_BASE + 0x24,
-    UART0_FBRD:     ReadWrite<u32> @ UART0_BASE + 0x28,
-    UART0_LCRH:     ReadWrite<u32> @ UART0_BASE + 0x2C => [
+    },
+    UART0_IBRD<ReadWrite<u32>@(UART0_BASE + 0x24)>,
+    UART0_FBRD<ReadWrite<u32>@(UART0_BASE + 0x28)>,
+    UART0_LCRH<ReadWrite<u32>@(UART0_BASE + 0x2C)> {
         SPS     OFFSET(7),
         WLEN    OFFSET(5) BITS(2),
         FEN     OFFSET(4),
@@ -127,8 +127,8 @@ define_registers![
         EPS     OFFSET(2),
         PEN     OFFSET(1),
         BRK     OFFSET(0)
-    ],
-    UART0_CR:       ReadWrite<u32> @ UART0_BASE + 0x30 => [
+    },
+    UART0_CR<ReadWrite<u32>@(UART0_BASE + 0x30)> {
         CTSEN   OFFSET(15),
         RTSEN   OFFSET(14),
         OUT2    OFFSET(13),
@@ -139,12 +139,12 @@ define_registers![
         TXE     OFFSET(8),
         LBE     OFFSET(7),
         UART_EN OFFSET(0)
-    ],
-    UART0_IFLS:     ReadWrite<u32> @ UART0_BASE + 0x34 => [
+    },
+    UART0_IFLS<ReadWrite<u32>@(UART0_BASE + 0x34)> {
         RXIFSEL OFFSET(3) BITS(3),
         TXIFSEL OFFSET(0) BITS(3)
-    ],
-    UART0_IMSC:     ReadWrite<u32> @ UART0_BASE + 0x38 => [
+    },
+    UART0_IMSC<ReadWrite<u32>@(UART0_BASE + 0x38)> {
         INT_OE      OFFSET(10), // Overrun error
         INT_BE      OFFSET(9),
         INT_PE      OFFSET(8),
@@ -155,8 +155,8 @@ define_registers![
         INT_DSRM    OFFSET(3),
         INT_DCDM    OFFSET(2),
         INT_CTSM    OFFSET(1)     
-    ],
-    UART0_RIS:      ReadWrite<u32> @ UART0_BASE + 0x3C,
-    UART0_MIS:      ReadWrite<u32> @ UART0_BASE + 0x40,
-    UART0_ICR:      ReadWrite<u32> @ UART0_BASE + 0x44
+    },
+    UART0_RIS<ReadWrite<u32>@(UART0_BASE + 0x3C)>,
+    UART0_MIS<ReadWrite<u32>@(UART0_BASE + 0x40)>,
+    UART0_ICR<ReadWrite<u32>@(UART0_BASE + 0x44)>
 ];
