@@ -161,8 +161,11 @@ impl Uart1 {
             if buffer.is_empty() {
                 Err("buffer size expected to be at least 1")
             } else {
-                for c in 0..buffer.len() {
-                    buffer[c] = interface::uart1_receive_data(1000)?;
+                //for c in 0..buffer.len() {
+                //    buffer[c] = interface::uart1_receive_data(1000)?;
+                //}
+                for data in &mut *buffer {
+                    *data = interface::uart1_receive_data(1000)?;
                 }
                 Ok(buffer.len())
             }
@@ -192,8 +195,11 @@ impl Uart1 {
             if buffer.is_empty() {
                 Err("buffer size expected to be at least 1")
             } else {
-                for c in 0..buffer.len() {
-                    buffer[c] = interface::uart1_receive_data(0)?;
+                //for c in 0..buffer.len() {
+                //    buffer[c] = interface::uart1_receive_data(0)?;
+                //}
+                for data in &mut *buffer {
+                    *data = interface::uart1_receive_data(0)?;
                 }
                 Ok(buffer.len())
             }

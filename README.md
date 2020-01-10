@@ -14,7 +14,7 @@ LEDs are not sufficient.
 To use the crate just add the following dependency to your ``Cargo.toml`` file:
 ```
 [dependencies]
-ruspiro-uart = "0.2"
+ruspiro-uart = { version = "0.3", features = ["ruspiro_pi3"] }
 ```
 
 Once done the access to the UART abstraction is available in your rust files like so:

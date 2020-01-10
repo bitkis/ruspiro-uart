@@ -9,7 +9,7 @@
 //!
 
 use ruspiro_gpio::GPIO;
-use ruspiro_register::{define_mmio_register, RegisterFieldValue};
+use ruspiro_register::define_mmio_register;
 use ruspiro_timer as timer;
 
 use crate::UartResult;
@@ -29,8 +29,12 @@ const UART0_BASE: u32 = PERIPHERAL_BASE + 0x0020_1000;
 ///       are passed?
 pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> UartResult<()> {
     GPIO.take_for(|gpio| {
-        gpio.get_pin(32).map(|pin| pin.to_alt_f3())?;
-        gpio.get_pin(33).map(|pin| pin.to_alt_f3())?;
+        gpio.get_pin(32)
+            .map(|pin| pin.into_alt_f3())
+            .map_err(|_| "GPIO error")?;
+        gpio.get_pin(33)
+            .map(|pin| pin.into_alt_f3())
+            .map_err(|_| "GPIO error")?;
         Ok(())
     })
     .and_then(|_| {
@@ -45,21 +49,14 @@ pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> UartResult<()> {
         UART0_ICR::Register.set(0x7FF);
         UART0_IBRD::Register.set(int_div);
         UART0_FBRD::Register.set(frac_div);
-        UART0_IFLS::Register.write(UART0_IFLS::RXIFSEL, Ifsel::Filled_1_8 as u32);
-        UART0_LCRH::Register.write_value(
-            RegisterFieldValue::<u32>::new(UART0_LCRH::WLEN, Wlen::DataLen8 as u32)
-                | RegisterFieldValue::<u32>::new(UART0_LCRH::FEN, 0x1),
-        );
+        UART0_IFLS::Register.write_value(UART0_IFLS::RXIFSEL::_1_8);
+        UART0_LCRH::Register.write_value(UART0_LCRH::WLEN::LEN8 | UART0_LCRH::FEN::ENABLED);
         UART0_CR::Register.write_value(
-            RegisterFieldValue::<u32>::new(UART0_CR::UART_EN, 0x1)
-                | RegisterFieldValue::<u32>::new(UART0_CR::TXE, 0x1)
-                | RegisterFieldValue::<u32>::new(UART0_CR::RXE, 0x1),
+            UART0_CR::UART_EN::ENABLED | UART0_CR::TXE::ENABLED | UART0_CR::RXE::ENABLED,
         );
 
         UART0_IMSC::Register.write_value(
-            RegisterFieldValue::<u32>::new(UART0_IMSC::INT_RX, 0x1)
-                | RegisterFieldValue::<u32>::new(UART0_IMSC::INT_RT, 0x1)
-                | RegisterFieldValue::<u32>::new(UART0_IMSC::INT_OE, 0x1),
+            UART0_IMSC::INT_RX::ENABLED | UART0_IMSC::INT_RT::ENABLED | UART0_IMSC::INT_OE::ENABLED,
         );
 
         // UART0 is now ready to be used
@@ -94,7 +91,7 @@ pub(crate) fn read_byte() -> Option<u8> {
     Some((UART0_DR::Register.get() & 0xFF) as u8)
 }
 
-#[allow(dead_code, non_camel_case_types)]
+#[allow(dead_code, non_camel_case_types, clippy::enum_variant_names)]
 enum Ifsel {
     Filled_1_8 = 0,
     Filled_1_4 = 1,
@@ -112,7 +109,7 @@ enum Wlen {
 }
 
 define_mmio_register![
-    UART0_DR<ReadWrite<u32>@(UART0_BASE + 0x00)>,
+    UART0_DR<ReadWrite<u32>@(UART0_BASE)>,
     UART0_RSRECR<ReadWrite<u32>@(UART0_BASE + 0x04)>,
     UART0_FR<ReadWrite<u32>@(UART0_BASE + 0x18)> {
         TXFE    OFFSET(7),
@@ -125,8 +122,16 @@ define_mmio_register![
     UART0_FBRD<ReadWrite<u32>@(UART0_BASE + 0x28)>,
     UART0_LCRH<ReadWrite<u32>@(UART0_BASE + 0x2C)> {
         SPS     OFFSET(7),
-        WLEN    OFFSET(5) BITS(2),
-        FEN     OFFSET(4),
+        WLEN    OFFSET(5) BITS(2) [
+            LEN8 = 3,
+            LEN7 = 2,
+            LEN6 = 1,
+            LEN5 = 0
+        ],
+        FEN     OFFSET(4) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
         STP2    OFFSET(3),
         EPS     OFFSET(2),
         PEN     OFFSET(1),
@@ -139,26 +144,81 @@ define_mmio_register![
         OUT1    OFFSET(12),
         RTS     OFFSET(11),
         DTR     OFFSET(10),
-        RXE     OFFSET(9),
-        TXE     OFFSET(8),
+        RXE     OFFSET(9) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        TXE     OFFSET(8) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
         LBE     OFFSET(7),
-        UART_EN OFFSET(0)
+        UART_EN OFFSET(0) [
+            ENABLED = 1,
+            DISABLED = 0
+        ]
     },
     UART0_IFLS<ReadWrite<u32>@(UART0_BASE + 0x34)> {
-        RXIFSEL OFFSET(3) BITS(3),
-        TXIFSEL OFFSET(0) BITS(3)
+        RXIFSEL OFFSET(3) BITS(3) [
+            _1_8 = 0,
+            _1_4 = 1,
+            _1_2 = 2,
+            _3_4 = 3,
+            _7_8 = 4
+        ],
+        TXIFSEL OFFSET(0) BITS(3) [
+            _1_8 = 0,
+            _1_4 = 1,
+            _1_2 = 2,
+            _3_4 = 3,
+            _7_8 = 4
+        ]
     },
     UART0_IMSC<ReadWrite<u32>@(UART0_BASE + 0x38)> {
-        INT_OE      OFFSET(10), // Overrun error
-        INT_BE      OFFSET(9),
-        INT_PE      OFFSET(8),
-        INT_FE      OFFSET(7),
-        INT_RT      OFFSET(6), // receive timeout means: FIFO is not empty and no more data is received during a 32bit period
-        INT_TX      OFFSET(5), // transit FiFo reached water mark
-        INT_RX      OFFSET(4), // receive FiFo reached water mark
-        INT_DSRM    OFFSET(3),
-        INT_DCDM    OFFSET(2),
-        INT_CTSM    OFFSET(1)     
+        /// Overrun error
+        INT_OE      OFFSET(10) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_BE      OFFSET(9) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_PE      OFFSET(8) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_FE      OFFSET(7) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        /// receive timeout means = FIFO is not empty and no more data is received during a 32bit period
+        INT_RT      OFFSET(6) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        /// transit FiFo reached water mark
+        INT_TX      OFFSET(5) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        /// receive FiFo reached water mark
+        INT_RX      OFFSET(4) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_DSRM    OFFSET(3) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_DCDM    OFFSET(2) [
+            ENABLED = 1,
+            DISABLED = 0
+        ],
+        INT_CTSM    OFFSET(1) [
+            ENABLED = 1,
+            DISABLED = 0
+        ]
     },
     UART0_RIS<ReadWrite<u32>@(UART0_BASE + 0x3C)>,
     UART0_MIS<ReadWrite<u32>@(UART0_BASE + 0x40)>,
