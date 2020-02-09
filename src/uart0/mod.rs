@@ -11,8 +11,11 @@
 //! communication bridge to other peripherals like the buit in bluetooth low energy chip.
 //!
 
-use ruspiro_console::*;
-
+use crate::alloc::boxed::Box;
+use crate::error::*;
+use crate::errors::{UartError, UartErrorType::*};
+use crate::ConsoleImpl;
+use ruspiro_interrupt::{Interrupt, InterruptManager, IRQ_MANAGER};
 mod interface;
 
 /// Uart0 peripheral representation
@@ -38,7 +41,7 @@ impl Uart0 {
     /// assert_eq!(uart.initialize(3_000_000, 115_200), Ok(()));
     /// # }
     /// ```
-    pub fn initialize(&mut self, clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
+    pub fn initialize(&mut self, clock_rate: u32, baud_rate: u32) -> Result<(), BoxError> {
         interface::init(clock_rate, baud_rate).map(|_| {
             self.initialized = true;
         })
@@ -53,14 +56,19 @@ impl Uart0 {
     /// # let mut uart = Uart0::new();
     /// # let _ = uart.initialize(3_000_000, 115_200);
     /// let data: [u8; 4] = [1, 15, 20, 10];
-    /// uart.write_data(&data);
+    /// uart.send_data(&data);
     /// # }
     /// ```
-    pub fn write_data(&self, data: &[u8]) {
+    pub fn send_data(&self, data: &[u8]) -> Result<(), BoxError> {
         if self.initialized {
             for byte in data {
-                interface::write_byte(*byte);
+                interface::send_byte(*byte);
             }
+            Ok(())
+        } else {
+            Err(
+                Box::new(UartError::new(UartNotInitialized))
+            )
         }
     }
 
@@ -71,17 +79,33 @@ impl Uart0 {
     /// # fn doc() {
     /// # let mut uart = Uart0::new();
     /// # let _ = uart.initialize(3_000_000, 115_200);
-    /// if let Some(data) = uart.read_data() {
-    ///     println!("received {}", data);
+    /// let mut buffer: [u8; 5] = [0; 5];
+    /// if uart.receive_data(&mut buffer).is_ok() {
+    ///     println!("received {:X?}", buffer);
     /// }
     /// # }
     /// ```
-    pub fn read_data(&self) -> Option<u8> {
+    pub fn receive_data(&self, buffer: &mut [u8]) -> Result<usize, BoxError> {
         if self.initialized {
-            interface::read_byte()
+            if buffer.is_empty() {
+                Err(Box::new(UartError::new(ReceiveBufferEmpty)))//"buffer size expected to be at least 1")
+            } else {
+                for data in &mut *buffer {
+                    *data = interface::receive_byte()?;
+                }
+                Ok(buffer.len())
+            }
         } else {
-            None
+            Err(Box::new(UartError::new(UartNotInitialized)))//"Uart0 not initialized")
         }
+    }
+
+    /// Register a callback function / closure to be execuded whenever an Uart0 related
+    /// interrupt is raised. This will also activate the intterrupts for Uart0 to be dispatched
+    /// by the global interrupt manager
+    pub fn register_irq_handler<F: FnMut() + 'static + Send>(&self, function: F) {
+        interface::set_irq_handler(function);
+        IRQ_MANAGER.take_for(|mgr: &mut InterruptManager| mgr.activate(Interrupt::Pl011));
     }
 }
 
@@ -97,10 +121,10 @@ impl Drop for Uart0 {
 impl ConsoleImpl for Uart0 {
     fn putc(&self, c: char) {
         let data: [u8; 1] = [c as u8];
-        self.write_data(&data);
+        self.send_data(&data);
     }
 
     fn puts(&self, s: &str) {
-        self.write_data(s.as_bytes());
+        self.send_data(s.as_bytes());
     }
 }

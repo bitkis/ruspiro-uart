@@ -11,6 +11,8 @@
 use ruspiro_gpio::GPIO;
 use ruspiro_register::{define_mmio_register, RegisterFieldValue};
 use ruspiro_timer as timer;
+use crate::error::*;
+use crate::errors::{UartError, UartErrorType::*};
 
 use crate::InterruptType;
 
@@ -23,14 +25,14 @@ const AUX_BASE: u32 = PERIPHERAL_BASE + 0x0021_5000;
 
 // initialize the UART1 peripheral of the Raspberry Pi3. This will reserve 2 GPIO pins for UART1 usage.
 // Those pins actually are GPIO14 and 15.
-pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
+pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), BoxError> {
     GPIO.take_for(|gpio| {
         gpio.get_pin(14)
             .map(|pin| pin.into_alt_f5().into_pud_disabled())
-            .map_err(|_| "GPIO error")?;
+            .map_err(|_|  UartError::new(InitializationFailed))?;
         gpio.get_pin(15)
             .map(|pin| pin.into_alt_f5().into_pud_disabled())
-            .map_err(|_| "GPIO error")?;
+            .map_err(|_|  UartError::new(InitializationFailed))?;
         Ok(())
     })
     .map(|_| {

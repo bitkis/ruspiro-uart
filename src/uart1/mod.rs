@@ -18,7 +18,7 @@
 //! of the actual device. Please refer to the [``ruspiro-console`` crate](https://crates.io/crates/ruspiro-console).
 //!
 
-extern crate alloc;
+use crate::error::BoxError;
 use crate::InterruptType;
 use ruspiro_console::ConsoleImpl;
 
@@ -53,7 +53,7 @@ impl Uart1 {
     /// # }
     /// ```
     ///
-    pub fn initialize(&mut self, clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
+    pub fn initialize(&mut self, clock_rate: u32, baud_rate: u32) -> Result<(), BoxError> {
         interface::uart1_init(clock_rate, baud_rate).map(|_| {
             self.initialized = true;
         })

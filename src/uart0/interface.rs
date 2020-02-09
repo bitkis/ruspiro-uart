@@ -8,7 +8,12 @@
 //! # Low-Level Uart0 interface implementation
 //!
 
+use crate::alloc::boxed::Box;
+use crate::error::*;
+use crate::errors::{UartError, UartErrorType::*};
+use ruspiro_console::*;
 use ruspiro_gpio::GPIO;
+use ruspiro_interrupt::*;
 use ruspiro_register::define_mmio_register;
 use ruspiro_timer as timer;
 
@@ -27,14 +32,14 @@ const UART0_BASE: u32 = PERIPHERAL_BASE + 0x0020_1000;
 /// TODO: enable the GPIO pins to be used to be passed from outside
 ///       Is there a way to do some compile time checks, that only valid pins
 ///       are passed?
-pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> UartResult<()> {
+pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> Result<(), BoxError> {
     GPIO.take_for(|gpio| {
         gpio.get_pin(32)
             .map(|pin| pin.into_alt_f3())
-            .map_err(|_| "GPIO error")?;
+            .map_err(|_| UartError::new(InitializationFailed))?;//"GPIO error")?;
         gpio.get_pin(33)
             .map(|pin| pin.into_alt_f3())
-            .map_err(|_| "GPIO error")?;
+            .map_err(|_| UartError::new(InitializationFailed))?;//"GPIO error")?;
         Ok(())
     })
     .and_then(|_| {
@@ -56,7 +61,9 @@ pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> UartResult<()> {
         );
 
         UART0_IMSC::Register.write_value(
-            UART0_IMSC::INT_RX::ENABLED | UART0_IMSC::INT_RT::ENABLED | UART0_IMSC::INT_OE::ENABLED,
+            UART0_IMSC::INT_RX::ENABLED 
+            //| UART0_IMSC::INT_RT::ENABLED 
+            | UART0_IMSC::INT_OE::ENABLED,
         );
 
         // UART0 is now ready to be used
@@ -71,7 +78,7 @@ pub(crate) fn release() {
     });
 }
 
-pub(crate) fn write_byte(data: u8) {
+pub(crate) fn send_byte(data: u8) {
     // wait until Uart0 is ready to accept writes
     while UART0_FR::Register.read(UART0_FR::TXFF) == 1 {
         timer::sleepcycles(10);
@@ -79,16 +86,36 @@ pub(crate) fn write_byte(data: u8) {
     UART0_DR::Register.set(data as u32);
 }
 
-pub(crate) fn read_byte() -> Option<u8> {
-    /*if UART0_FR::Register.read(UART0_FR::RXFE) == 1 {
-        None
-    } else {
-        Some((UART0_DR::Register.get() & 0xFF) as u8)
-    }*/
+pub(crate) fn receive_byte() -> Result<u8, BoxError> {
     while UART0_FR::Register.read(UART0_FR::RXFE) == 1 {
         timer::sleepcycles(10);
     }
-    Some((UART0_DR::Register.get() & 0xFF) as u8)
+    Ok((UART0_DR::Register.get() & 0xFF) as u8)
+}
+
+/// The call back that shall be executed once an Uart0 related interrupt is raised
+static mut UART0_INTERRUPT_CB: Option<Box<dyn FnMut() + 'static + Send>> = None;
+
+/// Set a new handler function for Uart0 related interrupts
+/// It is assumed to be safe to access this static mutably as this happens only once at
+/// start-up and before the UART0 interrupt will be enabled
+pub(crate) fn set_irq_handler<F: FnMut() + 'static + Send>(function: F) {
+    unsafe {
+        UART0_INTERRUPT_CB.replace(Box::from(function));
+    }
+}
+
+/// Handler for UART0 interrupts. External users of the Uart0 can register a call back function that
+/// shall be executed if an interrupt has been raised and handle the corresponding processing
+/// TODO: Allow specific handler for specific interrupt sources ?
+#[IrqHandler(Pl011)]
+fn uart0_handler() {
+    // acknowledge the interrupt, getting the masked state and write it to the clear register
+    let state = UART0_MIS::Register.get();
+    UART0_ICR::Register.set(state);
+    if let Some(ref mut function) = UART0_INTERRUPT_CB {
+        (function)()
+    };    
 }
 
 #[allow(dead_code, non_camel_case_types, clippy::enum_variant_names)]
@@ -174,6 +201,7 @@ define_mmio_register![
             _7_8 = 4
         ]
     },
+    /// Interrupt Mask Set/Clear register
     UART0_IMSC<ReadWrite<u32>@(UART0_BASE + 0x38)> {
         /// Overrun error
         INT_OE      OFFSET(10) [
@@ -220,7 +248,10 @@ define_mmio_register![
             DISABLED = 0
         ]
     },
+    /// Raw interrupt status register
     UART0_RIS<ReadWrite<u32>@(UART0_BASE + 0x3C)>,
+    /// Masked interrupt status register
     UART0_MIS<ReadWrite<u32>@(UART0_BASE + 0x40)>,
+    /// Interrupt clear register
     UART0_ICR<ReadWrite<u32>@(UART0_BASE + 0x44)>
 ];

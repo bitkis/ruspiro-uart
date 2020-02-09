@@ -4,7 +4,7 @@
  * Author: André Borrmann
  * License: Apache License 2.0
  **********************************************************************************************************************/
-#![doc(html_root_url = "https://docs.rs/ruspiro-uart/0.3.0")]
+#![doc(html_root_url = "https://docs.rs/ruspiro-uart/0.4.0")]
 #![no_std]
 #![feature(asm)]
 //! # UART API for Raspberry Pi
@@ -41,6 +41,10 @@
 //!     UART.take_for(|uart| uart.send_string(s));
 //! }
 //! ```
+extern crate alloc;
+use ruspiro_core::*;
+
+pub mod errors;
 
 pub mod uart0;
 #[doc(inline)]

@@ -1,7 +1,10 @@
 # Changelog
-## :carrot: v0.3.1
+## :pizza: v0.4.0
   - ### :bulb: Features
-    Very new features
+    - Uart0 allows now to register a "callback" that will executed once an Uart0 related interrupt occurs.
+    This ensures the whole low-level interrupt handling e.g. acknowledgement happens inside the ``uart`` crate.
+    - This create refernces now the ``ruspiro-core`` crate and introduces specific error types that increase
+    error handling usability
   - ### :detective: Fixes
     Bug-fixes
   - ### :wrench: Maintenance
