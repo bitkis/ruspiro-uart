@@ -20,13 +20,20 @@
 
 extern crate alloc;
 use crate::InterruptType;
+use alloc::{boxed::Box, sync::Arc};
 use ruspiro_console::ConsoleImpl;
+use ruspiro_interrupt::*;
 
 mod interface;
+
+use ruspiro_singleton::*;
+use ruspiro_gpio_hal::HalGpio;
+use ruspiro_error::*;
 
 /// Uart1 (miniUART) peripheral representation
 pub struct Uart1 {
     initialized: bool,
+    gpio: Arc<Singleton<Box<dyn HalGpio>>>,
 }
 
 impl Uart1 {
@@ -34,12 +41,27 @@ impl Uart1 {
     /// # Example
     /// ```no_run
     /// # use ruspiro_uart::uart1::*;
+    /// # use ruspiro_gpio_hal::Gpio;
+    /// # struct MyGpio {}
+    /// # impl MyGpio {
+    /// #   pub fn new() -> Arc<Box<Self>> {
+    /// #       Arc::new(
+    /// #           Box::new(
+    /// #               Self {}
+    /// #           )
+    /// #       )
+    /// #   }
+    /// # }
+    /// # impl Gpio fpr MyGpio {
+    /// # }
+    /// #
     /// # fn doc() {
-    /// let _miniUart = Uart1::new();
+    /// let gpio = MyGpio()::new();
+    /// let _miniUart = Uart1::new(gpio.clone());
     /// # }
     /// ```
-    pub const fn new() -> Self {
-        Uart1 { initialized: false }
+    pub fn new(gpio: Arc<Singleton<Box<dyn HalGpio>>>) -> Self {
+        Uart1 { initialized: false, gpio }
     }
 
     /// Initialize the Uart1 peripheral for usage. It takes the core clock rate and the
@@ -53,10 +75,33 @@ impl Uart1 {
     /// # }
     /// ```
     ///
-    pub fn initialize(&mut self, clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
-        interface::uart1_init(clock_rate, baud_rate).map(|_| {
-            self.initialized = true;
-        })
+    pub fn initialize(
+        &mut self,
+        clock_rate: u32,
+        baud_rate: u32) -> Result<(), BoxError>
+    {
+        // initializting the miniUART requires the GpioPin's 14 and 15 to be configured with
+        // alternative function 5
+        self.gpio.take_for::<_, Result<(), BoxError >>(|gpio| {
+            let _ = gpio.use_pin(14)?
+                .into_altfunc(5)?
+                .disable_pud();
+
+            Ok(())
+        });
+        /*
+        let _ = self.gpio.use_pin(14)
+            .and_then(|pin| pin.into_altfunc(5))
+            .map(|pin| pin.disable_pud());
+        let _ = self.gpio.use_pin(15)
+            .and_then(|pin| pin.into_altfunc(5))
+            .map(|pin| pin.disable_pud());
+            */
+        // if this has been successfull we can do the initialize the miniUART
+        interface::uart1_init(clock_rate, baud_rate)?;
+        self.initialized = true;
+        
+        Ok(())
     }
 
     /// Send a single character to the uart peripheral
@@ -271,6 +316,25 @@ impl Uart1 {
             0
         }
     }
+
+    /// Register a function or closure as an interrupt handler for a specific interrupt to be called
+    /// once the interrupt is raised. This function is consumed and called only once the interrupt occures
+    /// the first time. This means, the function might need re-registration if it shall be called on every
+    /// occurance of the interrupt.
+    pub fn register_interrupt_handler<F: FnOnce() + 'static + Send>(
+        &mut self,
+        irq_type: super::InterruptType,
+        function: F,
+    ) {
+        match irq_type {
+            super::InterruptType::Receive => {
+                unsafe { RCV_HANDLER.replace(Box::new(function)) };
+                IRQ_MANAGER.take_for(|irq_mgr| irq_mgr.activate(Interrupt::Aux));
+                self.enable_interrupts(irq_type);
+            }
+            _ => (),
+        }
+    }
 }
 
 impl Drop for Uart1 {
@@ -288,5 +352,30 @@ impl ConsoleImpl for Uart1 {
 
     fn puts(&self, s: &str) {
         self.send_string(s);
+    }
+}
+
+static mut RCV_HANDLER: Option<Box<dyn FnOnce() + 'static + Send>> = None;
+static mut TRN_HANDLER: Option<Box<dyn FnOnce() + 'static + Send>> = None;
+
+/// Interrupt handler for the UART1 being triggered once new data was received
+///
+/// # Safety
+///
+/// The interrupt handler is treated as "unsafe". It should never call any atomic blocking
+/// operation that my deadlock the main processing flow
+#[IrqHandler(Aux, Uart1)]
+fn uart_handler() {
+    let irq_status = interface::uart1_get_interrupt_status();
+    if irq_status & 0b011 == 0b010 {
+        // transmit register empty interrupt raised, call the corresponding handler
+        if let Some(function) = TRN_HANDLER.take() {
+            (function)();
+        }
+    } else if irq_status & 0b101 == 0b100 {
+        // receive register holds valid data interrupt raised, call the corresponding handler
+        if let Some(function) = RCV_HANDLER.take() {
+            (function)();
+        }
     }
 }

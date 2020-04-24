@@ -8,11 +8,12 @@
 //! # Low-Level UART interface implementation
 //!
 
-use ruspiro_gpio::GPIO;
+//use ruspiro_gpio::GPIO;
 use ruspiro_register::{define_mmio_register, RegisterFieldValue};
 use ruspiro_timer as timer;
 
 use crate::InterruptType;
+use ruspiro_error::BoxError;
 
 // Peripheral MMIO base address - depends on the right feature
 #[cfg(feature = "ruspiro_pi3")]
@@ -23,44 +24,36 @@ const AUX_BASE: u32 = PERIPHERAL_BASE + 0x0021_5000;
 
 // initialize the UART1 peripheral of the Raspberry Pi3. This will reserve 2 GPIO pins for UART1 usage.
 // Those pins actually are GPIO14 and 15.
-pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
-    GPIO.take_for(|gpio| {
-        gpio.get_pin(14)
-            .map(|pin| pin.into_alt_f5().into_pud_disabled())
-            .map_err(|_| "GPIO error")?;
-        gpio.get_pin(15)
-            .map(|pin| pin.into_alt_f5().into_pud_disabled())
-            .map_err(|_| "GPIO error")?;
-        Ok(())
-    })
-    .map(|_| {
-        AUX_ENABLES::Register.write(AUX_ENABLES::MINIUART_ENABLE, 0x1); // enable mini UART
-        AUX_MU_IER_REG::Register.set(0x0); // disable interrupts
-        AUX_MU_CNTL_REG::Register.set(0x0); // disable transmitter and receiver (to set new baud rate)
-        AUX_MU_LCR_REG::Register.write(AUX_MU_LCR_REG::DATASIZE, 0x3); // set 8bit data transfer mode
-        AUX_MU_MCR_REG::Register.set(0x0); // set UART_RTS line to high (ready to send)
-        AUX_MU_IER_REG::Register.set(0x0); // disable interrupts
-        AUX_MU_IIR_REG::Register //.set(0xC6);
-            .write_value(
-                RegisterFieldValue::<u32>::new(AUX_MU_IIR_REG::IRQID_FIFOCLR, 0b11)
-                    | RegisterFieldValue::<u32>::new(AUX_MU_IIR_REG::FIFO_ENABLES, 0b11),
-            ); // clear recieve/transmit FIFO, set FIFO as always enabled
-        AUX_MU_BAUD_REG::Register.set(clock_rate / (8 * baud_rate) - 1); // set the baud rate based on the core clock rate
+pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), BoxError> {
+    AUX_ENABLES::Register.write(AUX_ENABLES::MINIUART_ENABLE, 0x1); // enable mini UART
+    AUX_MU_IER_REG::Register.set(0x0); // disable interrupts
+    AUX_MU_CNTL_REG::Register.set(0x0); // disable transmitter and receiver (to set new baud rate)
+    AUX_MU_LCR_REG::Register.write(AUX_MU_LCR_REG::DATASIZE, 0x3); // set 8bit data transfer mode
+    AUX_MU_MCR_REG::Register.set(0x0); // set UART_RTS line to high (ready to send)
+    AUX_MU_IER_REG::Register.set(0x0); // disable interrupts
+    AUX_MU_IIR_REG::Register //.set(0xC6);
+        .write_value(
+            RegisterFieldValue::<u32>::new(AUX_MU_IIR_REG::IRQID_FIFOCLR, 0b11)
+                | RegisterFieldValue::<u32>::new(AUX_MU_IIR_REG::FIFO_ENABLES, 0b11),
+        ); // clear recieve/transmit FIFO, set FIFO as always enabled
+    AUX_MU_BAUD_REG::Register.set(clock_rate / (8 * baud_rate) - 1); // set the baud rate based on the core clock rate
 
-        AUX_MU_CNTL_REG::Register //.set(0x3);
-            .write_value(
-                RegisterFieldValue::<u32>::new(AUX_MU_CNTL_REG::RCV_ENABLE, 0x1)
-                    | RegisterFieldValue::<u32>::new(AUX_MU_CNTL_REG::TRANS_ENABLE, 0x1),
-            ); // enable receiver and transmitter
-    })
+    AUX_MU_CNTL_REG::Register //.set(0x3);
+        .write_value(
+            RegisterFieldValue::<u32>::new(AUX_MU_CNTL_REG::RCV_ENABLE, 0x1)
+                | RegisterFieldValue::<u32>::new(AUX_MU_CNTL_REG::TRANS_ENABLE, 0x1),
+        ); // enable receiver and transmitter
+    
+    Ok(())
 }
 
 // release the UART1 peripheral, this will also free the pins reserved for UART1 till now
 pub(crate) fn uart1_release() {
-    GPIO.take_for(|gpio| {
+    /*GPIO.take_for(|gpio| {
         gpio.free_pin(14);
         gpio.free_pin(15);
     });
+    */
 }
 
 // send a character string to the UART1 peripheral

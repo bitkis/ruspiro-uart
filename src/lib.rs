@@ -41,11 +41,11 @@
 //!     UART.take_for(|uart| uart.send_string(s));
 //! }
 //! ```
-
+/*
 pub mod uart0;
 #[doc(inline)]
 pub use uart0::*;
-
+*/
 pub mod uart1;
 #[doc(inline)]
 pub use uart1::*;
