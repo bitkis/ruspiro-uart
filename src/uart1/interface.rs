@@ -25,14 +25,15 @@ const AUX_BASE: u32 = PERIPHERAL_BASE + 0x0021_5000;
 // Those pins actually are GPIO14 and 15.
 pub(crate) fn uart1_init(clock_rate: u32, baud_rate: u32) -> Result<(), &'static str> {
     GPIO.take_for(|gpio| {
-        let maybe_tx = gpio
+        let tx = gpio
             .get_pin(14)
-            .map(|pin| pin.to_alt_f5().to_pud_disabled());
-        let maybe_ty = gpio
+            .map(|pin| pin.into_alt_f5().into_pud_disabled());
+        let ty = gpio
             .get_pin(15)
-            .map(|pin| pin.to_alt_f5().to_pud_disabled());
+            .map(|pin| pin.into_alt_f5().into_pud_disabled());
         // returns OK only if both pins could be setup correctly
-        maybe_tx.and(maybe_ty)
+        //maybe_tx.and(maybe_ty)
+        Ok((tx, ty))
     })
     .map(|_| {
         AUX_ENABLES::Register.write(AUX_ENABLES::MINIUART_ENABLE, 0x1); // enable mini UART

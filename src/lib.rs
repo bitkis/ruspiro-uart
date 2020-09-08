@@ -6,7 +6,7 @@
  **********************************************************************************************************************/
 #![doc(html_root_url = "https://docs.rs/ruspiro-uart/0.3.0")]
 #![no_std]
-#![feature(asm)]
+#![feature(llvm_asm)]
 //! # UART API for Raspberry Pi
 //!
 //! This crate provides access to the Uart0 (PL011) and the Uart1 (miniUART) peripheral of the Raspberry Pi. It is quite

@@ -29,8 +29,8 @@ const UART0_BASE: u32 = PERIPHERAL_BASE + 0x0020_1000;
 ///       are passed?
 pub(crate) fn init(clock_rate: u32, baud_rate: u32) -> UartResult<()> {
     GPIO.take_for(|gpio| {
-        gpio.get_pin(32).map(|pin| pin.to_alt_f3())?;
-        gpio.get_pin(33).map(|pin| pin.to_alt_f3())?;
+        let _ = gpio.get_pin(32).map(|pin| pin.into_alt_f3());
+        let _ = gpio.get_pin(33).map(|pin| pin.into_alt_f3());
         Ok(())
     })
     .and_then(|_| {
