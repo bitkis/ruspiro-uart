@@ -1,18 +1,19 @@
 [package]
 name = "ruspiro-uart"
 authors = ["André Borrmann <pspwizard@gmx.de>"]
-version = "0.3.0" # remember to update html_root_url
+version = "0.3.1" # remember to update html_root_url
 description = """
 Simple and convinient access API to the Raspberry Pi 3 UART0 (PL011) and UART1 (miniUART)
 peripherals
 """
 license = "Apache-2.0"
-repository = "https://github.com/RusPiRo/ruspiro-uart/tree/v0.3.0"
-documentation = "https://docs.rs/ruspiro-uart/0.3.0"
+repository = "https://github.com/RusPiRo/ruspiro-uart/tree/v0.3.1"
+documentation = "https://docs.rs/ruspiro-uart/0.3.1"
 readme = "README.md"
 keywords = ["RusPiRo", "uart", "baremetal", "raspberrypi"]
 categories = ["no-std", "embedded"]
 edition = "2018"
+exclude = [".travis.yml", "Makefile.toml"]
 
 [badges]
 travis-ci = { repository = "RusPiRo/ruspiro-uart", branch = "master" }
@@ -21,11 +22,20 @@ maintenance = { status = "actively-developed" }
 [lib]
 
 [dependencies]
-ruspiro-gpio = { path = "../gpio", version = "0.3" }
-ruspiro-register = { path = "../register", version = "0.3" }
-ruspiro-timer = { path = "../timer", version = "0.3" }
-ruspiro-console = { path = "../console", version = "0.3" }
+ruspiro-gpio = "0.4"
+ruspiro-register = "0.4"
+ruspiro-timer = "0.4"
+ruspiro-console = "0.3"
 
 [features]
 default = ["ruspiro_pi3"]
-ruspiro_pi3 = ["ruspiro-gpio/ruspiro_pi3"]
+ruspiro_pi3 = [
+    "ruspiro-gpio/ruspiro_pi3",
+    "ruspiro-timer/ruspiro_pi3"
+]
+
+[patch.crates-io]
+ruspiro-gpio = { git = "https://github.com/RusPiRo/ruspiro-gpio.git" }
+ruspiro-register = { git = "https://github.com/RusPiRo/ruspiro-register.git" }
+ruspiro-timer = { git = "https://github.com/RusPiRo/ruspiro-timer.git" }
+ruspiro-console = { git = "https://github.com/RusPiRo/ruspiro-console.git" }

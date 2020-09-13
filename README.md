@@ -12,13 +12,15 @@ LEDs are not sufficient.
 
 ## Usage
 To use the crate just add the following dependency to your ``Cargo.toml`` file:
-```
+
+```toml
 [dependencies]
-ruspiro-uart = "0.2"
+ruspiro-uart = "0.3"
 ```
 
 Once done the access to the UART abstraction is available in your rust files like so:
-```
+
+```rust
 use ruspiro_uart::Uart1;
 
 fn demo() {
@@ -38,7 +40,7 @@ the initialization function. However, the real core clock rate could be optained
 tag interface of the Raspberry Pi (see [ruspiro-mailbox](https://crates.io/crates/ruspiro-mailbox) for details.). This
 mailbox crate is not linked into the Uart crate to ensure usability of this crate with as less dependencies as possible.
 
-```
+```rust
 use ruspiro_singleton::Singleton; // don't forget the dependency to be setup
 use ruspiro_uart::Uart1;
 
@@ -56,4 +58,5 @@ fn print_something(s: &str) {
 ```
 
 ## License
-Licensed under Apache License, Version 2.0, ([LICENSE](LICENSE) or http://www.apache.org/licenses/LICENSE-2.0)
+
+Licensed under Apache License, Version 2.0, ([LICENSE](LICENSE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
